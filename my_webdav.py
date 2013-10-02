@@ -67,14 +67,17 @@ def ls(session, path, host, protocol = 'https'):
         print 'Failed to list {}'.format(path)
 
 def move(session, src, dest, host, protocol = 'https'):
-    prepped_src = os.path.join('{}://{}/'.format(protocol,host),src)
-    prepped_dest = os.path.join('{}://{}/'.format(protocol,host),dest)
-    myHeader = {"Destination":prepped_dest, "Host":host}
-    prepped = requests.Request('MOVE', prepped_src, headers = myHeader).prepare()
+    prepped_src = os.path.join('{}://{}/'.format(protocol,host), src)
+    prepped_dest = os.path.join('{}://{}/'.format(protocol,host), dest)
+    #print prepped_dest, prepped_src
+    base64string = base64.encodestring('%s:%s' % ('testwebdav', 'password1'))[:-1]  # remove ending newline
+    myHeader = {"Destination": prepped_dest, "Host": host, 'authorization':base64string, "Overwrite":"T"}
+    prepped = requests.Request('MOVE', prepped_src, headers=myHeader).prepare()
     response = session.send(prepped)
     if good_status(response.status_code):
         print 'Successfully moved {} to {}'.format(src, dest)
     else:
+        print response.content, response.status_code
         print 'Failed to move {} to {}'.format(src, dest)
 
 
@@ -113,7 +116,7 @@ if __name__ == '__main__':
     #delete(sess, filename, host)
 
     #add folder
-    #foldername= 'my_folder'
+    #foldername= 'new_folder'
     #addFolder(sess, foldername, host, user, password)
 
     #delete - folder
@@ -124,7 +127,12 @@ if __name__ == '__main__':
     #folder = ''
     #ls(sess,folder, host)
 
-    #move
-    src = '/somefile.txt'
-    dest = '/my_folder'
-    move(sess, src, dest, host)
+    #move - rename
+    #src = 'somefile.txt'
+    #dest = 'newfile.txt'
+    #move(sess, src, dest, host)
+
+    #move - move
+    #src = 'my_folder'
+    #dest = 'new_folder/newfile.txt'
+    #move(sess,src,dest,host)
