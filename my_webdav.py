@@ -4,7 +4,6 @@ import requests
 import os
 import base64
 import xml.etree.ElementTree as ET
-import xml.dom.minidom as minidom
 
 
 def get_session(username, password):
@@ -71,7 +70,7 @@ def move(session, src, dest, host, protocol = 'https'):
     prepped_dest = os.path.join('{}://{}/'.format(protocol,host), dest)
     #print prepped_dest, prepped_src
     base64string = base64.encodestring('%s:%s' % ('testwebdav', 'password1'))[:-1]  # remove ending newline
-    myHeader = {"Destination": prepped_dest, "Host": host, 'authorization':base64string, "Overwrite":"T"}
+    myHeader = {"Destination": prepped_dest, 'authorization':base64string, "Overwrite": "T"}
     prepped = requests.Request('MOVE', prepped_src, headers=myHeader).prepare()
     response = session.send(prepped)
     if good_status(response.status_code):
@@ -79,6 +78,39 @@ def move(session, src, dest, host, protocol = 'https'):
     else:
         print response.content, response.status_code
         print 'Failed to move {} to {}'.format(src, dest)
+
+
+def copy(session, src, dest, host, protocol='https', depth=0):
+    src = src.lstrip('/')
+    dest = dest.lstrip('/')
+    prepped_src = os.path.join('{}://{}/'.format(protocol,host), src)
+    prepped_dest = os.path.join('{}://{}/'.format(protocol,host), dest)
+
+    base64string = base64.encodestring('%s:%s' % ('testwebdav', 'password1'))[:-1]  # remove ending newline
+    myHeader = {"Overwrite": 'F', 'authorization': base64string, "Destination": prepped_dest, "Depth": "1"}
+    prepped = requests.Request('COPY', prepped_src, headers=myHeader).prepare()
+    response = session.send(prepped)
+    if good_status(response.status_code):
+        print response.status_code
+        print 'Successfully copied {} to {}'.format(src, dest)
+    else:
+        print 'Failed to copy {} to {}'.format(src, dest)
+        print response.content, response.status_code
+
+
+def update(session, src, new_content, host, protocol = 'https'):
+    print new_content
+    assert os.path.exists(new_content)
+    with open(new_content, 'rb') as fid:
+        mydata = fid.read()
+        prepped_src = '{}://{}/{}'.format(protocol, host, src)
+        response = session.put(prepped_src, data=mydata)
+        if good_status(response.status_code):
+            print 'Successfully updated {} with {}'.format(src, new_content)
+            print response.content, response.status_code
+        else:
+            print 'Failed to update {} with {}'.format(src, new_content)
+            print response.content, response.status_code
 
 
 def good_status(status_code):
@@ -128,11 +160,21 @@ if __name__ == '__main__':
     #ls(sess,folder, host)
 
     #move - rename
-    #src = 'somefile.txt'
-    #dest = 'newfile.txt'
+    #src = 'foo.txt'
+    #dest = 'bar.txt'
     #move(sess, src, dest, host)
 
     #move - move
-    #src = 'my_folder'
-    #dest = 'new_folder/newfile.txt'
+    #dest = 'foo.txt'
+    #src = 'new_folder/newfile.txt'
     #move(sess,src,dest,host)
+
+    #copy - file
+    #dest = 'cat.txt'
+    #src = 'new_folder/cat.txt'
+    #copy(sess, src,dest,host)
+
+    #update
+    #src = 'cat.txt'
+    #new_content = os.path.expanduser(os.path.join('~','PycharmProjects','webDAV','crabs.txt'))
+    #update(sess,src, new_content,host)
