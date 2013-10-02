@@ -2,6 +2,8 @@ __author__ = 'mingxiao'
 
 import unittest
 import my_webdav as mydav
+import os
+
 
 class WebDAVTest(unittest.TestCase):
 
@@ -96,6 +98,12 @@ class WebDAVTest(unittest.TestCase):
 """
         self.smallxml = ""
 
+        self.host = 'webdav.o2oxygencloud.net'
+        self.user = 'testwebdav'
+        self.password = 'password1'
+        #self.session = mydav.get_session(self.user, self.password)
+        self.dav_dir = os.path.join('~', 'PyCharms', 'webDAV')
+
     def test_extract(self):
         namespace = {"D": "DAV:"}
         tag = 'D:href'
@@ -104,6 +112,14 @@ class WebDAVTest(unittest.TestCase):
 
     def test_good_status(self):
         self.assertTrue(mydav.good_status(201))
+        self.assertTrue(mydav.good_status(207))
+        self.assertFalse(mydav.good_status(301))
+
+    def test_download(self):
+        filename = '00546_lonelybeach_2560x1600.jpg'
+        session = mydav.get_session(self.user, self.password)
+        #downloadPath = os.path.join(self.dav_dir, filename)
+        mydav.download(session, filename, self.host)
 
 if __name__ == '__main__':
     unittest.main()
