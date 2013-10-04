@@ -3,7 +3,9 @@ __author__ = 'mingxiao'
 import unittest
 import my_webdav as mydav
 import os
-
+import requests
+import qp_xml
+import sys
 
 class WebDAVTest(unittest.TestCase):
 
@@ -102,12 +104,15 @@ class WebDAVTest(unittest.TestCase):
         self.user = 'testwebdav'
         self.password = 'password1'
         #self.session = mydav.get_session(self.user, self.password)
-        self.dav_dir = os.path.join('~', 'PyCharms', 'webDAV')
+        self.session = requests.Session()
+        self.session.auth = (self.user, self.password)
+        self.dav_dir = os.path.expanduser(os.path.join('~', 'PycharmProjects', 'my_webdav_search'))
 
     def test_extract(self):
-        namespace = {"D": "DAV:"}
-        tag = 'D:href'
-        mydav.extract(self.xmlstr, namespace, tag)
+        parser = qp_xml.Parser()
+        parser.parse(self.xmlstr)
+        qp_xml.dump(sys.stdout,parser.root)
+        print parser.find_prefix('D:')
         pass
 
     def test_good_status(self):
@@ -117,9 +122,19 @@ class WebDAVTest(unittest.TestCase):
 
     def test_download(self):
         filename = '00546_lonelybeach_2560x1600.jpg'
-        session = mydav.get_session(self.user, self.password)
-        #downloadPath = os.path.join(self.dav_dir, filename)
-        mydav.download(session, filename, self.host)
+        #session = mydav.get_session(self.user, self.password)
+        downloadPath = os.path.join(self.dav_dir, filename)
+        print self.session
+
+        mydav.download(self.session, filename, self.host, downloadPath)
+
+    def tearDown(self):
+        self.session.close()
 
 if __name__ == '__main__':
-    unittest.main()
+    suite = unittest.TestSuite()
+    suite.addTest(WebDAVTest('test_extract'))
+
+    runner = unittest.TextTestRunner()
+    runner.run(suite)
+    #unittest.main()

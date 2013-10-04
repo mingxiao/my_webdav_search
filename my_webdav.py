@@ -13,11 +13,12 @@ def get_session(username, password):
 
 
 def download(session,filename, host, downloadPath, protocol='https'):
-    r = session.get("{}://{}/{}".format(protocol,host,filename),stream=True)
+    prepped_src = "{}://{}/{}".format(protocol, host, filename)
+    r = session.get(prepped_src, stream=True)
     if r.status_code == 200:
         print 'downloading...'
         #path = os.path.join(os.getcwd(),'other.jpg')
-        with open(downloadPath,'wb') as f:
+        with open(downloadPath, 'wb') as f:
             for chunk in r.iter_content():
                 f.write(chunk)
         print 'Downloaded {} to {}'.format(filename, downloadPath)
@@ -44,7 +45,7 @@ def delete(session, filename,host,protocol='https'):
 
 def addFolder(session, folderPath, host, user, password, protocol = 'https'):
     base64string = base64.encodestring('{}:{}'.format(user, password))[:-1]
-    myHeader = {"Depth": 1, "authorization":"Basic %s" % base64string}
+    myHeader = {"Depth": 1, "authorization": "Basic %s" % base64string}
     prepped = requests.Request('MKCOL', "{}://{}/{}".format(protocol, host,folderPath), headers=myHeader).prepare()
     response = session.send(prepped)
     if good_status(response.status_code):
@@ -58,7 +59,7 @@ def ls(session, path, host, protocol = 'https'):
     """
     base64string = base64.encodestring('%s:%s' % ('testwebdav', 'password1'))[:-1]  # remove ending newline
     myHeader = {"Depth": 1, "authorization":"Basic %s" % base64string}
-    prepped = requests.Request('PROPFIND', "{}://{}/{}".format(protocol, host, path), headers = myHeader).prepare()
+    prepped = requests.Request('PROPFIND', "{}://{}/{}".format(protocol, host, path), headers=myHeader).prepare()
     response = session.send(prepped)
     if good_status(response.status_code):
         print response.content
@@ -68,9 +69,8 @@ def ls(session, path, host, protocol = 'https'):
 def move(session, src, dest, host, protocol = 'https'):
     prepped_src = os.path.join('{}://{}/'.format(protocol,host), src)
     prepped_dest = os.path.join('{}://{}/'.format(protocol,host), dest)
-    #print prepped_dest, prepped_src
     base64string = base64.encodestring('%s:%s' % ('testwebdav', 'password1'))[:-1]  # remove ending newline
-    myHeader = {"Destination": prepped_dest, 'authorization':base64string, "Overwrite": "T"}
+    myHeader = {"Destination": prepped_dest, "Overwrite": "T"}
     prepped = requests.Request('MOVE', prepped_src, headers=myHeader).prepare()
     response = session.send(prepped)
     if good_status(response.status_code):
@@ -91,7 +91,6 @@ def copy(session, src, dest, host, protocol='https', depth=0):
     prepped = requests.Request('COPY', prepped_src, headers=myHeader).prepare()
     response = session.send(prepped)
     if good_status(response.status_code):
-        print response.status_code
         print 'Successfully copied {} to {}'.format(src, dest)
     else:
         print 'Failed to copy {} to {}'.format(src, dest)
@@ -107,7 +106,7 @@ def update(session, src, new_content, host, protocol = 'https'):
         response = session.put(prepped_src, data=mydata)
         if good_status(response.status_code):
             print 'Successfully updated {} with {}'.format(src, new_content)
-            print response.content, response.status_code
+            #print response.content, response.status_code
         else:
             print 'Failed to update {} with {}'.format(src, new_content)
             print response.content, response.status_code
@@ -133,48 +132,51 @@ if __name__ == '__main__':
     host = 'webdav.o2cloud.net'
     sess = get_session(user, password)
 
-    #download - file
-    #filename = '00546_lonelybeach_2560x1600.jpg'
-    #downPath = os.path.join(os.getcwd(),filename)
-    #download(sess, filename, host, downPath)
 
-    #upload
-    #upfile = os.path.join(os.getcwd(), 'foo.txt')
-    #serverFile = 'somefile.txt'
-    #upload(sess, upfile, serverFile, host)
-
-    #delete - file
-    #filename = 'somefile'
-    #delete(sess, filename, host)
-
-    #add folder
+    #Create new_folder
     #foldername= 'new_folder'
     #addFolder(sess, foldername, host, user, password)
 
-    #delete - folder
-    #folder_name = 'my_folder'
-    #delete(sess,folder_name, host)
+    #upload foo.txt to new_folder
+    #upfile = os.path.join(os.getcwd(), 'foo.txt')
+    #serverFile = 'new_folder/foo.txt'
+    #upload(sess, upfile, serverFile, host)
+
+    #move - move /new_folder/foo.txt to /foo.txt
+    dest = 'foo.txt'
+    src = 'new_folder/foo.txt'
+    move(sess, src, dest, host)
+
+    #update foo.txt with crabs.txt
+    #src = 'foo.txt'
+    #new_content = os.path.expanduser(os.path.join('~','PycharmProjects','my_webdav_search','crabs.txt'))
+    #update(sess,src, new_content,host)
+
+    #download - foo.txt
+    #filename = 'foo.txt'
+    #downPath = os.path.expanduser(os.path.join('~', 'Downloads', filename))
+    #download(sess, filename, host, downPath)
+
+    #delete - foo.txt
+    #filename = 'foo.txt'
+    #delete(sess, filename, host)
+
+    #delete - new_folder
+    #folder_name = 'new_folder'
+    #delete(sess, folder_name, host)
 
     #ls
     #folder = ''
-    #ls(sess,folder, host)
+    #ls(sess, folder, host)
 
     #move - rename
     #src = 'foo.txt'
     #dest = 'bar.txt'
     #move(sess, src, dest, host)
 
-    #move - move
-    #dest = 'foo.txt'
-    #src = 'new_folder/newfile.txt'
-    #move(sess,src,dest,host)
-
     #copy - file
     #dest = 'cat.txt'
     #src = 'new_folder/cat.txt'
     #copy(sess, src,dest,host)
 
-    #update
-    #src = 'cat.txt'
-    #new_content = os.path.expanduser(os.path.join('~','PycharmProjects','webDAV','crabs.txt'))
-    #update(sess,src, new_content,host)
+
